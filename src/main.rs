@@ -1,14 +1,16 @@
 extern crate gl;
 extern crate glutin;
 
-use glutin::GlContext;
+use glutin::{GlContext, GlRequest, Api};
 
 fn main() {
+    print!("main started!!!");
     let mut events_loop = glutin::EventsLoop::new();
     let window = glutin::WindowBuilder::new()
-        .with_title("Hello, world!")
-        .with_dimensions(1024, 768);
+        .with_title("Hello, world!");
+        //.with_dimensions(1024, 768);
     let context = glutin::ContextBuilder::new()
+        .with_gl(GlRequest::Specific(Api::OpenGlEs, (2, 0)))
         .with_vsync(true);
     let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
 
@@ -24,6 +26,7 @@ fn main() {
     let mut running = true;
     while running {
         events_loop.poll_events(|event| {
+            print!("main loop!!!");
             match event {
                 glutin::Event::WindowEvent{ event, .. } => match event {
                     glutin::WindowEvent::CloseRequested => running = false,
