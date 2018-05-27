@@ -1,0 +1,8 @@
+[package]
+name = "android_rust_test"
+version = "0.1.0"
+authors = ["William Wold <wm@wmww.sh>"]
+
+[dependencies]
+gl = "*"
+glutin = "*"
