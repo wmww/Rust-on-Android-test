@@ -6,3 +6,4 @@ authors = ["William Wold <wm@wmww.sh>"]
 [dependencies]
 gl = "*"
 glutin = "*"
+rusttype = { version = "0.5", features = ["gpu_cache"] }
