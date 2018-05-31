@@ -2,6 +2,8 @@ extern crate gl;
 extern crate glutin;
 extern crate rusttype;
 
+mod gl_basic;
+
 use glutin::{GlContext, GlRequest, Api};
 
 use rusttype::{point, vector, Font, PositionedGlyph, Rect, Scale, FontCollection};
@@ -28,7 +30,7 @@ fn main() {
 
     unsafe {
         gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
-        gl::ClearColor(0.0, 0.5, 1.0, 1.0);
+        gl::ClearColor(0.0, 0.0, 0.0, 1.0);
     }
 
     /*let font_data = include_bytes!("../fonts/wqy-microhei/WenQuanYiMicroHei.ttf");
@@ -106,6 +108,8 @@ fn main() {
     }
 
     unsafe {
+
+        /*
         let vs = gl::CreateShader(gl::VERTEX_SHADER);
         gl::ShaderSource(vs, 1, [VS_SRC.as_ptr() as *const _].as_ptr(), ptr::null());
         gl::CompileShader(vs);
@@ -116,28 +120,9 @@ fn main() {
         infoLog.set_len(1512 - 1); // subtract 1 to skip the trailing null character
         gl::GetShaderiv(vs, gl::COMPILE_STATUS, &mut success);
         if success != gl::TRUE as i32 {
-            gl::GetShaderInfoLog(vs, 1512, ptr::null_mut(), infoLog.as_mut_ptr() as *mut u8);
+            gl::GetShaderInfoLog(vs, 1512, ptr::null_mut(), infoLog.as_mut_ptr() as *mut i8);
             println!("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n > {}", String::from_utf8_lossy(&infoLog));
                 /*match str::from_utf8_lossy(&infoLog) {
-                    Ok(log) => log.to_string(),
-                    Err(error) => format!("filed to get log, error: {}", error),
-                });*/
-        }
-
-        let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
-        gl::ShaderSource(fs, 1, [FS_SRC.as_ptr() as *const _].as_ptr(), ptr::null());
-        gl::CompileShader(fs);
-
-        // check for shader compile errors
-        let mut success = gl::FALSE as i32;
-        let mut infoLog = Vec::with_capacity(1512);
-        infoLog.set_len(1512 - 1); // subtract 1 to skip the trailing null character
-        gl::GetShaderiv(fs, gl::COMPILE_STATUS, &mut success);
-        if success != gl::TRUE as i32 {
-            gl::GetShaderInfoLog(fs, 1512, ptr::null_mut(), infoLog.as_mut_ptr() as *mut u8);
-            let log_str =
-            println!("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n > {}", String::from_utf8_lossy(&infoLog));
-                /*match str::from_utf8(&infoLog) {
                     Ok(log) => log.to_string(),
                     Err(error) => format!("filed to get log, error: {}", error),
                 });*/
@@ -154,7 +139,7 @@ fn main() {
         infoLog.set_len(1512 - 1); // subtract 1 to skip the trailing null character
         gl::GetProgramiv(program, gl::LINK_STATUS, &mut success);
         if success != gl::TRUE as i32 {
-            gl::GetProgramInfoLog(program, 1512, ptr::null_mut(), infoLog.as_mut_ptr() as *mut u8);
+            gl::GetProgramInfoLog(program, 1512, ptr::null_mut(), infoLog.as_mut_ptr() as *mut i8);
             println!("ERROR::SHADER::PROGRAM::COMPILATION_FAILED\n > {}", str::from_utf8(&infoLog).unwrap_or("could not get shader log"));
         }
 
@@ -162,6 +147,12 @@ fn main() {
         gl::DeleteShader(fs);
 
         gl::UseProgram(program);
+        */
+        let program = match gl_basic::Program::compile(VS_SRC, FS_SRC) {
+                Ok(p) => p,
+                Err(e) => panic!("shader program: {}", e),
+            };
+        program.begin_use();
 
         let mut vb = mem::uninitialized();
         gl::GenBuffers(1, &mut vb);
@@ -186,9 +177,9 @@ fn main() {
         gl::EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
         gl::EnableVertexAttribArray(color_attrib as gl::types::GLuint);
         */
-        let pos_attrib = gl::GetAttribLocation(program, b"position\0".as_ptr() as *const _);
-        let tex_coords_attrib = gl::GetAttribLocation(program, b"tex_coords\0".as_ptr() as *const _);
-        let color_attrib = gl::GetAttribLocation(program, b"color\0".as_ptr() as *const _);
+        let pos_attrib = gl::GetAttribLocation(program.id, b"position\0".as_ptr() as *const _);
+        let tex_coords_attrib = gl::GetAttribLocation(program.id, b"tex_coords\0".as_ptr() as *const _);
+        let color_attrib = gl::GetAttribLocation(program.id, b"color\0".as_ptr() as *const _);
         gl::VertexAttribPointer(pos_attrib as gl::types::GLuint, 2, gl::FLOAT, 0,
                                     8 * mem::size_of::<f32>() as gl::types::GLsizei,
                                     (0 * mem::size_of::<f32>()) as *const () as *const _);
@@ -304,11 +295,13 @@ static VERTEX_DATA: [f32; 15] = [
 ];
 */
 
+/*
 static VERTEX_DATA: [f32; 15] = [
     -0.5, -0.5,     0.2, 1.0, 0.0,
     -0.5, 1.0,      0.0, 0.5, 0.1,
     1.0, -0.5,      0.0, 0.3, 0.6,
 ];
+*/
 
 static VERTEX_TXT_DATA: [f32; 24] = [
     -0.5, -0.5,     -1.0, -1.0,     0.2, 1.0, 0.0, 1.0,
@@ -316,7 +309,7 @@ static VERTEX_TXT_DATA: [f32; 24] = [
     1.0, -0.5,      2.0, -1.0,      0.0, 0.3, 0.6, 1.0,
 ];
 
-const VS_SRC: &'static [u8] = b"
+const VS_SRC: &str = "
 #version 100
 precision mediump float;
 
@@ -332,10 +325,9 @@ void main() {
 
     v_color = color;
     v_tex_coords = tex_coords;
-}
-\0";
+}";
 
-const FS_SRC: &'static [u8] = b"
+const FS_SRC: &str = "
 #version 100
 precision mediump float;
 
@@ -345,13 +337,10 @@ varying vec3 v_color;
 varying vec2 v_tex_coords;
 
 void main() {
-    //gl_FragColor = vec4(v_color, 1.0);
-    //vec4 tex_clr = texture2D(tex, v_tex_coords);
-    //gl_FragColor = vec4(v_color.r, v_color.g, tex_clr.r, 1.0);
     gl_FragColor = texture2D(tex, v_tex_coords);
-}
-\0";
+}";
 
+/*
 const VS_TXT_SRC: &'static [u8] = b"
     #version 140
     in vec2 position;
@@ -376,3 +365,4 @@ void main() {
     f_colour = v_colour;// * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
 }
 \0";
+*/
