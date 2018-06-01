@@ -268,25 +268,23 @@ fn main() {
                 Err(e) => panic!("shader program: {}", e),
             };
 
-    let mut drawable = match gl_basic::Object::new(program) {
+    let mut drawable = match gl_basic::VertexData::new_object(program) {
                 Ok(d) => d,
                 Err(e) => panic!("Drawable: {}", e),
             };
 
-    drawable.set_attribs_default();
-
-    drawable.set_vertices(vec![
+    gl_basic::VertexData::set_object_vertices(&mut drawable, vec![
             gl_basic::VertexData{
-                point: gl_basic::Vec2{x: -0.5, y: -0.5},
-                tex: gl_basic::Vec2{x: -1.0, y: -1.0},
+                position: gl_basic::Vec2{x: -0.5, y: -0.5},
+                tex_coords: gl_basic::Vec2{x: -1.0, y: -1.0},
                 color: gl_basic::Vec4{x: 0.2, y: 1.0, z: 0.0, w: 1.0}},
             gl_basic::VertexData{
-                point: gl_basic::Vec2{x: -0.5, y: 1.0},
-                tex: gl_basic::Vec2{x: -1.0, y: 2.0},
+                position: gl_basic::Vec2{x: -0.5, y: 1.0},
+                tex_coords: gl_basic::Vec2{x: -1.0, y: 2.0},
                 color: gl_basic::Vec4{x: 0.0, y: 0.5, z: 0.1, w: 1.0}},
             gl_basic::VertexData{
-                point: gl_basic::Vec2{x: 1.0, y: -0.5},
-                tex: gl_basic::Vec2{x: 2.0, y: -1.0},
+                position: gl_basic::Vec2{x: 1.0, y: -0.5},
+                tex_coords: gl_basic::Vec2{x: 2.0, y: -1.0},
                 color: gl_basic::Vec4{x: 0.0, y: 0.3, z: 0.6, w: 1.0}},
         ]);
 
