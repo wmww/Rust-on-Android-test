@@ -1,4 +1,5 @@
 pub mod shader;
+#[macro_use]
 pub mod object;
 pub mod types;
 

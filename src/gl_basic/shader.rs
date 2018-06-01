@@ -119,22 +119,3 @@ impl Drop for Program {
         }
     }
 }
-
-/*
-macro_rules! attribs {
-    (struct $name:ident {
-        $($field_name:ident: $field_type:ty,)*
-    }) => {
-        struct $name {
-            $($field_name: $field_type,)*
-        }
-
-        impl $name {
-            // This is purely an example—not a good one.
-            fn get_field_names() -> Vec<&'static str> {
-                vec![$(stringify!($field_name)),*]
-            }
-        }
-    }
-}
-*/

@@ -108,31 +108,41 @@ impl Drop for Object {
     }
 }
 
-#[repr(packed)]
-pub struct VertexData {
-    pub position: types::Vec2,
-    pub tex_coords: types::Vec2,
-    pub color: types::Vec4,
-}
-
-impl VertexData {
-    pub fn new_object(program: gl_basic::Program) -> Result<Object, String> {
-        let mut object = Object::new(program);
-        if let Ok(ref mut object) = &mut object {
-            object.set_attribs(vec![
-                    types::Attrib{name: "position".to_string(), gl_type: types::Vec2::gl_type(), element_count: types::Vec2::element_count()},
-                    types::Attrib{name: "tex_coords".to_string(), gl_type: types::Vec2::gl_type(), element_count: types::Vec2::element_count()},
-                    types::Attrib{name: "color".to_string(), gl_type: types::Vec4::gl_type(), element_count: types::Vec4::element_count()},
-                ]);
+#[macro_export]
+macro_rules! attribs {
+    (pub struct $name:ident {
+        $(pub $field_name:ident: $field_type:ty,)*
+    }) => {
+        #[repr(packed)]
+        pub struct $name {
+            $(pub $field_name: $field_type,)*
         }
-        object
-    }
 
-    pub fn set_object_vertices(object: &mut Object, data: Vec<VertexData>) {
-        unsafe {
-            object.set_vertices(
-                (data.len() * mem::size_of::<VertexData>()) as gl::types::GLsizeiptr,
-                data.as_ptr() as *const _);
+        impl $name {
+            pub fn new_object(program: gl_basic::Program) -> Result<gl_basic::Object, String> {
+                let mut object = gl_basic::Object::new(program);
+                if let Ok(ref mut object) = &mut object {
+                    object.set_attribs(vec![
+                            $(gl_basic::types::Attrib{
+                                name: stringify!($field_name).to_string(),
+                                gl_type: <$field_type>::gl_type(),
+                                element_count: <$field_type>::element_count()},)*
+                        ]);
+                }
+                object
+            }
+
+            pub fn set_object_vertices(object: &mut gl_basic::Object, data: Vec<$name>) {
+                unsafe {
+                    object.set_vertices(
+                        (data.len() * mem::size_of::<$name>()) as gl::types::GLsizeiptr,
+                        data.as_ptr() as *const _);
+                }
+            }
+
+            //fn get_field_names() -> Vec<&'static str> {
+            //    vec![$(stringify!($field_name)),*]
+            //}
         }
     }
 }
