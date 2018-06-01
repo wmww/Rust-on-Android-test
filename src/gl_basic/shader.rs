@@ -105,7 +105,7 @@ impl Program {
         }
     }
 
-    pub fn end_use() {
+    pub fn end_use(&self) {
         unsafe {
             gl::UseProgram(0);
         }

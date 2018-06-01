@@ -13,6 +13,140 @@ use std::mem;
 use std::ptr;
 use std::str;
 
+#[repr(packed)]
+struct Vec2D {
+    x: gl::types::GLfloat,
+    y: gl::types::GLfloat,
+}
+
+#[repr(packed)]
+struct ColorRGBA {
+    r: gl::types::GLfloat,
+    g: gl::types::GLfloat,
+    b: gl::types::GLfloat,
+    a: gl::types::GLfloat,
+}
+
+#[repr(packed)]
+struct VertexData {
+    point: Vec2D,
+    tex: Vec2D,
+    color: ColorRGBA,
+}
+
+#[repr(packed)]
+struct TriIndices {
+    a: gl::types::GLuint,
+    b: gl::types::GLuint,
+    c: gl::types::GLuint,
+}
+
+struct Drawable {
+    program: gl_basic::Program,
+    vertex_array_id: gl::types::GLuint,
+    vertex_buffer_id: gl::types::GLuint,
+    element_buffer_id: gl::types::GLuint,
+    tri_count: u32,
+}
+
+impl Drawable {
+    fn new(program: gl_basic::Program) -> Result<Drawable, String> {
+        unsafe {
+            let mut vertex_array = mem::uninitialized();
+            gl::GenVertexArrays(1, &mut vertex_array);
+
+            let mut vertex_buffer = mem::uninitialized();
+		    gl::GenBuffers(1, &mut vertex_buffer);
+
+            let mut element_buffer = mem::uninitialized();
+            gl::GenBuffers(1, &mut element_buffer);
+
+            gl::BindVertexArray(vertex_array);
+            gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffer);
+
+            {
+                let pos_attrib = gl::GetAttribLocation(program.id, b"position\0".as_ptr() as *const _);
+                gl::VertexAttribPointer(pos_attrib as gl::types::GLuint, 2, gl::FLOAT, 0,
+                                        8 * mem::size_of::<f32>() as gl::types::GLsizei,
+                                        (0 * mem::size_of::<f32>()) as *const () as *const _);
+                gl::EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
+            }
+
+            {
+                let tex_coords_attrib = gl::GetAttribLocation(program.id, b"tex_coords\0".as_ptr() as *const _);
+                gl::VertexAttribPointer(tex_coords_attrib as gl::types::GLuint, 2, gl::FLOAT, 0,
+                                        8 * mem::size_of::<f32>() as gl::types::GLsizei,
+                                        (2 * mem::size_of::<f32>()) as *const () as *const _);
+                gl::EnableVertexAttribArray(tex_coords_attrib as gl::types::GLuint);
+            }
+
+            {
+                let color_attrib = gl::GetAttribLocation(program.id, b"color\0".as_ptr() as *const _);
+                gl::VertexAttribPointer(color_attrib as gl::types::GLuint, 4, gl::FLOAT, 0,
+                                        8 * mem::size_of::<f32>() as gl::types::GLsizei,
+                                        (4 * mem::size_of::<f32>()) as *const () as *const _);
+                gl::EnableVertexAttribArray(color_attrib as gl::types::GLuint);
+            }
+
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, element_buffer);
+            //remember: do NOT unbind element_buffer, keep it bound to this vertex array
+
+            // prevent bugs
+            gl::BindVertexArray(0);
+
+            Ok(Drawable {
+                    program: program,
+                    vertex_array_id: vertex_array,
+                    vertex_buffer_id: vertex_buffer,
+                    element_buffer_id: element_buffer,
+                    tri_count: 0,
+                })
+        }
+    }
+
+    fn set_vertex_data(&self, data: Vec<VertexData>) {
+        unsafe {
+            gl::BindVertexArray(self.vertex_array_id);
+            gl::BufferData(gl::ARRAY_BUFFER,
+                           (data.len() * mem::size_of::<VertexData>()) as gl::types::GLsizeiptr,
+                           data.as_ptr() as *const _, gl::DYNAMIC_DRAW);
+            gl::BindVertexArray(0);
+        }
+    }
+
+    fn set_indices(&mut self, data: Vec<TriIndices>) {
+        unsafe {
+            gl::BindVertexArray(self.vertex_array_id);
+            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,
+                           (mem::size_of::<TriIndices>() * data.len()) as isize,
+                           data.as_ptr() as *const _,
+                           gl::DYNAMIC_DRAW);
+            self.tri_count = (data.len() * 3) as u32;
+            gl::BindVertexArray(0);
+        }
+    }
+
+    fn draw(&self) {
+        unsafe {
+            self.program.begin_use();
+            gl::BindVertexArray(self.vertex_array_id);
+            gl::DrawElements(gl::TRIANGLES, self.tri_count as i32, gl::UNSIGNED_INT, std::ptr::null());
+            gl::BindVertexArray(0);
+            self.program.end_use();
+        }
+    }
+}
+
+impl Drop for Drawable {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.vertex_buffer_id);
+            gl::DeleteBuffers(1, &self.element_buffer_id);
+            gl::DeleteVertexArrays(1, &self.vertex_array_id);
+        }
+    }
+}
+
 fn main() {
     println!("main started!!!");
     let mut events_loop = glutin::EventsLoop::new();
@@ -148,12 +282,9 @@ fn main() {
 
         gl::UseProgram(program);
         */
-        let program = match gl_basic::Program::compile(VS_SRC, FS_SRC) {
-                Ok(p) => p,
-                Err(e) => panic!("shader program: {}", e),
-            };
-        program.begin_use();
+        //program.begin_use();
 
+        /*
         let mut vb = mem::uninitialized();
         gl::GenBuffers(1, &mut vb);
         gl::BindBuffer(gl::ARRAY_BUFFER, vb);
@@ -164,6 +295,7 @@ fn main() {
         let mut vao = mem::uninitialized();
         gl::GenVertexArrays(1, &mut vao);
         gl::BindVertexArray(vao);
+        */
 
         /*
         let pos_attrib = gl::GetAttribLocation(program, b"position\0".as_ptr() as *const _);
@@ -177,6 +309,8 @@ fn main() {
         gl::EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
         gl::EnableVertexAttribArray(color_attrib as gl::types::GLuint);
         */
+
+        /*
         let pos_attrib = gl::GetAttribLocation(program.id, b"position\0".as_ptr() as *const _);
         let tex_coords_attrib = gl::GetAttribLocation(program.id, b"tex_coords\0".as_ptr() as *const _);
         let color_attrib = gl::GetAttribLocation(program.id, b"color\0".as_ptr() as *const _);
@@ -192,7 +326,7 @@ fn main() {
         gl::EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
         gl::EnableVertexAttribArray(tex_coords_attrib as gl::types::GLuint);
         gl::EnableVertexAttribArray(color_attrib as gl::types::GLuint);
-
+        */
         // load and create a texture
         // -------------------------
         let mut texture = 0;
@@ -263,6 +397,33 @@ fn main() {
         gl::EnableVertexAttribArray(color_attrib as gl::types::GLuint);
     }*/
 
+    let program = match gl_basic::Program::compile(VS_SRC, FS_SRC) {
+                Ok(p) => p,
+                Err(e) => panic!("shader program: {}", e),
+            };
+
+    let mut drawable = match Drawable::new(program) {
+                Ok(d) => d,
+                Err(e) => panic!("Drawable: {}", e),
+            };
+
+    drawable.set_vertex_data(vec![
+            VertexData{
+                point: Vec2D{x: -0.5, y: -0.5},
+                tex: Vec2D{x: -1.0, y: -1.0},
+                color: ColorRGBA{r: 0.2, g: 1.0, b: 0.0, a: 1.0}},
+            VertexData{
+                point: Vec2D{x: -0.5, y: 1.0},
+                tex: Vec2D{x: -1.0, y: 2.0},
+                color: ColorRGBA{r: 0.0, g: 0.5, b: 0.1, a: 1.0}},
+            VertexData{
+                point: Vec2D{x: 1.0, y: -0.5},
+                tex: Vec2D{x: 2.0, y: -1.0},
+                color: ColorRGBA{r: 0.0, g: 0.3, b: 0.6, a: 1.0}},
+        ]);
+
+    drawable.set_indices(vec![TriIndices{a: 0, b: 1, c: 2}]);
+
     let mut running = true;
     while running {
         events_loop.poll_events(|event| {
@@ -280,7 +441,8 @@ fn main() {
         unsafe {
             gl::ClearColor(0.0, 1.0, 0.5, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
-            gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            //gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            drawable.draw();
         }
 
         gl_window.swap_buffers().unwrap();
