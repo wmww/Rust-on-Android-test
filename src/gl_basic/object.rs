@@ -98,7 +98,7 @@ impl Object {
         }
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&self) {
         self.program.bind_then(|| unsafe {
             gl::BindVertexArray(self.vertex_array_id);
             gl::DrawElements(
@@ -148,8 +148,9 @@ macro_rules! attribs {
 
             pub fn set_vertices(object: &mut gl_basic::Object, data: Vec<$name>) {
                 unsafe {
+                    use std;
                     object.set_vertices(
-                        (data.len() * mem::size_of::<$name>()) as gl::types::GLsizeiptr,
+                        (data.len() * std::mem::size_of::<$name>()) as gl::types::GLsizeiptr,
                         data.as_ptr() as *const _);
                 }
             }

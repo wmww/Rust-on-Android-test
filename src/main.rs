@@ -33,6 +33,12 @@ fn main() {
 
     gl::load_with(|symbol| gl_window.get_proc_address(symbol) as *const _);
 
+    unsafe {
+        gl::Enable(gl::BLEND);
+        gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1); // stop text from being skewed
+    }
+
     /*let font_data = include_bytes!("../fonts/wqy-microhei/WenQuanYiMicroHei.ttf");
     let font = Font::from_bytes(font_data as &[u8]).unwrap();
 
@@ -189,6 +195,13 @@ fn main() {
 
     drawable.set_indices(vec![[0, 1, 2]]);
 
+    let (window_width, window_height) = gl_window.get_inner_size().unwrap();
+
+    let text_obj = match text::GlGlyphCache::new(window_width as f32, window_height as f32) {
+        Ok(o) => o,
+        Err(e) => panic!("GlGlyphCache: {}", e),
+    };
+
     let mut running = true;
     while running {
         events_loop.poll_events(|event| {
@@ -211,6 +224,8 @@ fn main() {
         texture.bind_then(|| {
             drawable.draw();
         });
+
+        text_obj.draw();
 
         gl_window.swap_buffers().unwrap();
     }
