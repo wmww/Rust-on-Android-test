@@ -11,20 +11,28 @@ impl Texture {
         unsafe {
             let mut id = std::mem::uninitialized();
             gl::GenTextures(1, &mut id);
-            Ok(Texture{id: id})
+            Ok(Texture { id: id })
         }
     }
 
     pub fn bind_then<F>(&self, mut operation: F)
-        where F: FnMut() {
-        unsafe { gl::BindTexture(gl::TEXTURE_2D, self.id); }
+    where
+        F: FnMut(),
+    {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
+        }
         operation();
-        unsafe { gl::BindTexture(gl::TEXTURE_2D, 0); }
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
     }
 }
 
 impl Drop for Texture {
     fn drop(&mut self) {
-        unsafe { gl::DeleteTextures(1, &self.id); }
+        unsafe {
+            gl::DeleteTextures(1, &self.id);
+        }
     }
 }

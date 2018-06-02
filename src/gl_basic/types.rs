@@ -38,23 +38,39 @@ fn byte_size_of_gl_type(gl_type: gl::types::GLenum) -> gl::types::GLint {
 }
 
 impl GlType for Float {
-    fn gl_type() -> gl::types::GLenum { gl::FLOAT }
-    fn element_count() -> gl::types::GLint { 1 }
+    fn gl_type() -> gl::types::GLenum {
+        gl::FLOAT
+    }
+    fn element_count() -> gl::types::GLint {
+        1
+    }
 }
 
 impl GlType for Vec2 {
-    fn gl_type() -> gl::types::GLenum { gl::FLOAT }
-    fn element_count() -> gl::types::GLint { 2 }
+    fn gl_type() -> gl::types::GLenum {
+        gl::FLOAT
+    }
+    fn element_count() -> gl::types::GLint {
+        2
+    }
 }
 
 impl GlType for Vec3 {
-    fn gl_type() -> gl::types::GLenum { gl::FLOAT }
-    fn element_count() -> gl::types::GLint { 3 }
+    fn gl_type() -> gl::types::GLenum {
+        gl::FLOAT
+    }
+    fn element_count() -> gl::types::GLint {
+        3
+    }
 }
 
 impl GlType for Vec4 {
-    fn gl_type() -> gl::types::GLenum { gl::FLOAT }
-    fn element_count() -> gl::types::GLint { 4 }
+    fn gl_type() -> gl::types::GLenum {
+        gl::FLOAT
+    }
+    fn element_count() -> gl::types::GLint {
+        4
+    }
 }
 
 pub struct Attrib {

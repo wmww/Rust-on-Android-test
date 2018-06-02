@@ -22,7 +22,7 @@ impl Object {
             gl::GenVertexArrays(1, &mut vertex_array);
 
             let mut vertex_buffer = mem::uninitialized();
-		    gl::GenBuffers(1, &mut vertex_buffer);
+            gl::GenBuffers(1, &mut vertex_buffer);
 
             let mut element_buffer = mem::uninitialized();
             gl::GenBuffers(1, &mut element_buffer);
@@ -36,29 +36,37 @@ impl Object {
             gl::BindVertexArray(0);
 
             Ok(Object {
-                    program: program,
-                    vertex_array_id: vertex_array,
-                    vertex_buffer_id: vertex_buffer,
-                    element_buffer_id: element_buffer,
-                    tri_count: 0,
-                })
+                program: program,
+                vertex_array_id: vertex_array,
+                vertex_buffer_id: vertex_buffer,
+                element_buffer_id: element_buffer,
+                tri_count: 0,
+            })
         }
     }
 
     pub fn set_attribs(&mut self, attribs: Vec<types::Attrib>) {
         unsafe {
             gl::BindVertexArray(self.vertex_array_id);
-            let stride = attribs.iter().fold(0, |sum, attrib| sum + attrib.byte_size());
+            let stride = attribs
+                .iter()
+                .fold(0, |sum, attrib| sum + attrib.byte_size());
             let mut offset = 0;
             for attrib in attribs {
                 let pos_attrib = gl::GetAttribLocation(
                     self.program.id,
-                    std::ffi::CString::new(attrib.name.clone()).unwrap().as_ptr() as *const _);
-                gl::VertexAttribPointer(pos_attrib as gl::types::GLuint,
-                                        attrib.element_count, gl::FLOAT,
-                                        gl::FALSE,
-                                        stride as gl::types::GLsizei,
-                                        offset as *const () as *const _);
+                    std::ffi::CString::new(attrib.name.clone())
+                        .unwrap()
+                        .as_ptr() as *const _,
+                );
+                gl::VertexAttribPointer(
+                    pos_attrib as gl::types::GLuint,
+                    attrib.element_count,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    stride as gl::types::GLsizei,
+                    offset as *const () as *const _,
+                );
                 offset += attrib.byte_size();
                 gl::EnableVertexAttribArray(pos_attrib as gl::types::GLuint);
             }
@@ -66,7 +74,11 @@ impl Object {
         }
     }
 
-    pub unsafe fn set_vertices(&mut self, size: gl::types::GLsizeiptr, data: *const std::os::raw::c_void) {
+    pub unsafe fn set_vertices(
+        &mut self,
+        size: gl::types::GLsizeiptr,
+        data: *const std::os::raw::c_void,
+    ) {
         gl::BindVertexArray(self.vertex_array_id);
         gl::BufferData(gl::ARRAY_BUFFER, size, data, gl::DYNAMIC_DRAW);
         gl::BindVertexArray(0);
@@ -75,25 +87,27 @@ impl Object {
     pub fn set_indices(&mut self, data: Vec<[gl::types::GLuint; 3]>) {
         unsafe {
             gl::BindVertexArray(self.vertex_array_id);
-            gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,
-                           (data.len() * 3 * mem::size_of::<gl::types::GLuint>()) as isize,
-                           data.as_ptr() as *const _,
-                           gl::DYNAMIC_DRAW);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (data.len() * 3 * mem::size_of::<gl::types::GLuint>()) as isize,
+                data.as_ptr() as *const _,
+                gl::DYNAMIC_DRAW,
+            );
             self.tri_count = data.len() as u32;
             gl::BindVertexArray(0);
         }
     }
 
     pub fn draw(&mut self) {
-        self.program.bind_then(|| {
-            unsafe {
-                gl::BindVertexArray(self.vertex_array_id);
-                gl::DrawElements(gl::TRIANGLES,
-                                 (self.tri_count * 3) as i32,
-                                 gl::UNSIGNED_INT,
-                                 std::ptr::null());
-                gl::BindVertexArray(0);
-            }
+        self.program.bind_then(|| unsafe {
+            gl::BindVertexArray(self.vertex_array_id);
+            gl::DrawElements(
+                gl::TRIANGLES,
+                (self.tri_count * 3) as i32,
+                gl::UNSIGNED_INT,
+                std::ptr::null(),
+            );
+            gl::BindVertexArray(0);
         });
     }
 }

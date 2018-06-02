@@ -4,11 +4,12 @@ extern crate rusttype;
 
 #[macro_use]
 mod gl_basic;
+mod text;
 
-use glutin::{GlContext, GlRequest, Api};
+use glutin::{Api, GlContext, GlRequest};
 
-use rusttype::{point, vector, Font, PositionedGlyph, Rect, Scale, FontCollection};
 use rusttype::gpu_cache::CacheBuilder;
+use rusttype::{point, vector, Font, FontCollection, PositionedGlyph, Rect, Scale};
 
 use std::mem;
 use std::ptr;
@@ -19,9 +20,8 @@ use gl_basic::types::*;
 fn main() {
     println!("main started!!!");
     let mut events_loop = glutin::EventsLoop::new();
-    let window = glutin::WindowBuilder::new()
-        .with_title("Hello, world!");
-        //.with_dimensions(1024, 768);
+    let window = glutin::WindowBuilder::new().with_title("Hello, world!");
+    //.with_dimensions(1024, 768);
     let context = glutin::ContextBuilder::new()
         .with_gl(GlRequest::Specific(Api::OpenGlEs, (3, 0)))
         .with_vsync(true);
@@ -107,65 +107,85 @@ fn main() {
         }
     }
 
-
     let mut texture = match gl_basic::Texture::new() {
-                Ok(p) => p,
-                Err(e) => panic!("Texture: {}", e),
-            };
+        Ok(p) => p,
+        Err(e) => panic!("Texture: {}", e),
+    };
 
     texture.bind_then(|| {
-            unsafe {
-                // set the texture wrapping parameters
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-                // set texture filtering parameters
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-                gl::TexImage2D(gl::TEXTURE_2D,
-                               0,
-                               gl::RGBA as i32,
-                               width as i32,
-                               pixel_height as i32,
-                               0,
-                               gl::RGBA,
-                               gl::UNSIGNED_BYTE,
-                               &pixel_data[0] as *const u8 as *const std::os::raw::c_void);
-                gl::GenerateMipmap(gl::TEXTURE_2D);
-            }
-        });
+        unsafe {
+            // set the texture wrapping parameters
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            // set texture filtering parameters
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                gl::RGBA as i32,
+                width as i32,
+                pixel_height as i32,
+                0,
+                gl::RGBA,
+                gl::UNSIGNED_BYTE,
+                &pixel_data[0] as *const u8 as *const std::os::raw::c_void,
+            );
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+        }
+    });
 
     let program = match gl_basic::Program::compile(VS_SRC, FS_SRC) {
-                Ok(p) => p,
-                Err(e) => panic!("shader program: {}", e),
-            };
+        Ok(p) => p,
+        Err(e) => panic!("shader program: {}", e),
+    };
 
-    attribs!(
-        pub struct Vertex {
-            pub position: Vec2,
-            pub tex_coords: Vec2,
-            pub color: Vec4,
-        }
-    );
+    attribs!(pub struct Vertex {
+        pub position: Vec2,
+        pub tex_coords: Vec2,
+        pub color: Vec4,
+    });
 
     let mut drawable = match Vertex::new_object(program) {
-                Ok(d) => d,
-                Err(e) => panic!("Drawable: {}", e),
-            };
+        Ok(d) => d,
+        Err(e) => panic!("Drawable: {}", e),
+    };
 
-    Vertex::set_vertices(&mut drawable, vec![
-            Vertex{
-                position: gl_basic::Vec2{x: -0.5, y: -0.5},
-                tex_coords: gl_basic::Vec2{x: -1.0, y: -1.0},
-                color: gl_basic::Vec4{x: 0.2, y: 1.0, z: 0.0, w: 1.0}},
-            Vertex{
-                position: gl_basic::Vec2{x: -0.5, y: 1.0},
-                tex_coords: gl_basic::Vec2{x: -1.0, y: 2.0},
-                color: gl_basic::Vec4{x: 0.0, y: 0.5, z: 0.1, w: 1.0}},
-            Vertex{
-                position: gl_basic::Vec2{x: 1.0, y: -0.5},
-                tex_coords: gl_basic::Vec2{x: 2.0, y: -1.0},
-                color: gl_basic::Vec4{x: 0.0, y: 0.3, z: 0.6, w: 1.0}},
-        ]);
+    Vertex::set_vertices(
+        &mut drawable,
+        vec![
+            Vertex {
+                position: gl_basic::Vec2 { x: -0.5, y: -0.5 },
+                tex_coords: gl_basic::Vec2 { x: -1.0, y: -1.0 },
+                color: gl_basic::Vec4 {
+                    x: 0.2,
+                    y: 1.0,
+                    z: 0.0,
+                    w: 1.0,
+                },
+            },
+            Vertex {
+                position: gl_basic::Vec2 { x: -0.5, y: 1.0 },
+                tex_coords: gl_basic::Vec2 { x: -1.0, y: 2.0 },
+                color: gl_basic::Vec4 {
+                    x: 0.0,
+                    y: 0.5,
+                    z: 0.1,
+                    w: 1.0,
+                },
+            },
+            Vertex {
+                position: gl_basic::Vec2 { x: 1.0, y: -0.5 },
+                tex_coords: gl_basic::Vec2 { x: 2.0, y: -1.0 },
+                color: gl_basic::Vec4 {
+                    x: 0.0,
+                    y: 0.3,
+                    z: 0.6,
+                    w: 1.0,
+                },
+            },
+        ],
+    );
 
     drawable.set_indices(vec![[0, 1, 2]]);
 
@@ -174,12 +194,12 @@ fn main() {
         events_loop.poll_events(|event| {
             println!("main loop!!!");
             match event {
-                glutin::Event::WindowEvent{ event, .. } => match event {
+                glutin::Event::WindowEvent { event, .. } => match event {
                     glutin::WindowEvent::CloseRequested => running = false,
                     glutin::WindowEvent::Resized(w, h) => gl_window.resize(w, h),
-                    _ => ()
+                    _ => (),
                 },
-                _ => ()
+                _ => (),
             }
         });
 
@@ -189,8 +209,8 @@ fn main() {
         }
 
         texture.bind_then(|| {
-                drawable.draw();
-            });
+            drawable.draw();
+        });
 
         gl_window.swap_buffers().unwrap();
     }

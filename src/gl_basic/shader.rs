@@ -18,10 +18,15 @@ impl Shader {
     pub fn new(shader_type: ShaderType, source: &str) -> Result<Shader, String> {
         unsafe {
             let id = gl::CreateShader(match &shader_type {
-                    ShaderType::Vert => gl::VERTEX_SHADER,
-                    ShaderType::Frag => gl::FRAGMENT_SHADER,
-                });
-            gl::ShaderSource(id, 1, [std::ffi::CString::new(source).unwrap().as_ptr() as *const _].as_ptr(), std::ptr::null());
+                ShaderType::Vert => gl::VERTEX_SHADER,
+                ShaderType::Frag => gl::FRAGMENT_SHADER,
+            });
+            gl::ShaderSource(
+                id,
+                1,
+                [std::ffi::CString::new(source).unwrap().as_ptr() as *const _].as_ptr(),
+                std::ptr::null(),
+            );
             gl::CompileShader(id);
 
             // check for compile errors
@@ -30,22 +35,27 @@ impl Shader {
             info_log.set_len(MAX_LOG_LENGTH - 1); // subtract 1 to skip the trailing null character
             gl::GetShaderiv(id, gl::COMPILE_STATUS, &mut success);
             if success == gl::TRUE as i32 {
-                Ok(Shader{id: id})
-            }
-            else
-            {
-                gl::GetShaderInfoLog(id, MAX_LOG_LENGTH as i32, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut _);
+                Ok(Shader { id: id })
+            } else {
+                gl::GetShaderInfoLog(
+                    id,
+                    MAX_LOG_LENGTH as i32,
+                    std::ptr::null_mut(),
+                    info_log.as_mut_ptr() as *mut _,
+                );
                 gl::DeleteShader(id);
                 //match str::from_utf8_lossy(&info_log) {
                 //    Ok(log) => log.to_string(),
                 //    Err(error) => format!("filed to get log, error: {}", error),
                 //});
-                Err(format!("{} shader compile error: {}",
+                Err(format!(
+                    "{} shader compile error: {}",
                     match &shader_type {
-                            ShaderType::Vert => "vertex",
-                            ShaderType::Frag => "fragment",
-                        },
-                    String::from_utf8_lossy(&info_log)))
+                        ShaderType::Vert => "vertex",
+                        ShaderType::Frag => "fragment",
+                    },
+                    String::from_utf8_lossy(&info_log)
+                ))
             }
         }
     }
@@ -78,13 +88,19 @@ impl Program {
             info_log.set_len(MAX_LOG_LENGTH - 1); // subtract 1 to skip the trailing null character
             gl::GetProgramiv(id, gl::LINK_STATUS, &mut success);
             if success == gl::TRUE as i32 {
-                Ok(Program{id: id})
-            }
-            else
-            {
-                gl::GetProgramInfoLog(id, MAX_LOG_LENGTH as i32, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut _);
+                Ok(Program { id: id })
+            } else {
+                gl::GetProgramInfoLog(
+                    id,
+                    MAX_LOG_LENGTH as i32,
+                    std::ptr::null_mut(),
+                    info_log.as_mut_ptr() as *mut _,
+                );
                 gl::DeleteProgram(id);
-                Err(format!("shader program link error: {}", String::from_utf8_lossy(&info_log)))
+                Err(format!(
+                    "shader program link error: {}",
+                    String::from_utf8_lossy(&info_log)
+                ))
             }
         }
     }
@@ -100,10 +116,16 @@ impl Program {
     }
 
     pub fn bind_then<F>(&self, mut operation: F)
-        where F: FnMut() {
-        unsafe { gl::UseProgram(self.id); }
+    where
+        F: FnMut(),
+    {
+        unsafe {
+            gl::UseProgram(self.id);
+        }
         operation();
-        unsafe { gl::UseProgram(0); }
+        unsafe {
+            gl::UseProgram(0);
+        }
     }
 }
 
