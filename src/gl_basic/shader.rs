@@ -34,7 +34,7 @@ impl Shader {
             }
             else
             {
-                gl::GetShaderInfoLog(id, MAX_LOG_LENGTH as i32, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut i8);
+                gl::GetShaderInfoLog(id, MAX_LOG_LENGTH as i32, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut _);
                 gl::DeleteShader(id);
                 //match str::from_utf8_lossy(&info_log) {
                 //    Ok(log) => log.to_string(),
@@ -82,7 +82,7 @@ impl Program {
             }
             else
             {
-                gl::GetProgramInfoLog(id, MAX_LOG_LENGTH as i32, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut i8);
+                gl::GetProgramInfoLog(id, MAX_LOG_LENGTH as i32, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut _);
                 gl::DeleteProgram(id);
                 Err(format!("shader program link error: {}", String::from_utf8_lossy(&info_log)))
             }
@@ -99,16 +99,11 @@ impl Program {
         }
     }
 
-    pub fn begin_use(&self) {
-        unsafe {
-            gl::UseProgram(self.id);
-        }
-    }
-
-    pub fn end_use(&self) {
-        unsafe {
-            gl::UseProgram(0);
-        }
+    pub fn bind_then<F>(&self, mut operation: F)
+        where F: FnMut() {
+        unsafe { gl::UseProgram(self.id); }
+        operation();
+        unsafe { gl::UseProgram(0); }
     }
 }
 

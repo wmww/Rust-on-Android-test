@@ -85,16 +85,16 @@ impl Object {
     }
 
     pub fn draw(&mut self) {
-        unsafe {
-            self.program.begin_use();
-            gl::BindVertexArray(self.vertex_array_id);
-            gl::DrawElements(gl::TRIANGLES,
-                             (self.tri_count * 3) as i32,
-                             gl::UNSIGNED_INT,
-                             std::ptr::null());
-            gl::BindVertexArray(0);
-            self.program.end_use();
-        }
+        self.program.bind_then(|| {
+            unsafe {
+                gl::BindVertexArray(self.vertex_array_id);
+                gl::DrawElements(gl::TRIANGLES,
+                                 (self.tri_count * 3) as i32,
+                                 gl::UNSIGNED_INT,
+                                 std::ptr::null());
+                gl::BindVertexArray(0);
+            }
+        });
     }
 }
 
@@ -132,17 +132,13 @@ macro_rules! attribs {
                 object
             }
 
-            pub fn set_object_vertices(object: &mut gl_basic::Object, data: Vec<$name>) {
+            pub fn set_vertices(object: &mut gl_basic::Object, data: Vec<$name>) {
                 unsafe {
                     object.set_vertices(
                         (data.len() * mem::size_of::<$name>()) as gl::types::GLsizeiptr,
                         data.as_ptr() as *const _);
                 }
             }
-
-            //fn get_field_names() -> Vec<&'static str> {
-            //    vec![$(stringify!($field_name)),*]
-            //}
         }
     }
 }

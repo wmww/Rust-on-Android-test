@@ -23,7 +23,7 @@ fn main() {
         .with_title("Hello, world!");
         //.with_dimensions(1024, 768);
     let context = glutin::ContextBuilder::new()
-        .with_gl(GlRequest::Specific(Api::OpenGlEs, (2, 0)))
+        .with_gl(GlRequest::Specific(Api::OpenGlEs, (3, 0)))
         .with_vsync(true);
     let gl_window = glutin::GlWindow::new(window, context, &events_loop).unwrap();
 
@@ -107,30 +107,32 @@ fn main() {
         }
     }
 
-    unsafe {
-        let mut texture = 0;
-        gl::GenTextures(1, &mut texture);
-        gl::BindTexture(gl::TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-        // set the texture wrapping parameters
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
-        // set texture filtering parameters
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        gl::TexImage2D(gl::TEXTURE_2D,
-                       0,
-                       gl::RGBA as i32,
-                       width as i32,
-                       pixel_height as i32,
-                       0,
-                       gl::RGBA,
-                       gl::UNSIGNED_BYTE,
-                       &pixel_data[0] as *const u8 as *const std::os::raw::c_void);
-        gl::GenerateMipmap(gl::TEXTURE_2D);
 
-        //let tex_loc = gl::GetUniformLocation(program, b"tex\0".as_ptr() as *const _);
-        gl::BindTexture(gl::TEXTURE_2D, texture);
-    }
+    let mut texture = match gl_basic::Texture::new() {
+                Ok(p) => p,
+                Err(e) => panic!("Texture: {}", e),
+            };
+
+    texture.bind_then(|| {
+            unsafe {
+                // set the texture wrapping parameters
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+                // set texture filtering parameters
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+                gl::TexImage2D(gl::TEXTURE_2D,
+                               0,
+                               gl::RGBA as i32,
+                               width as i32,
+                               pixel_height as i32,
+                               0,
+                               gl::RGBA,
+                               gl::UNSIGNED_BYTE,
+                               &pixel_data[0] as *const u8 as *const std::os::raw::c_void);
+                gl::GenerateMipmap(gl::TEXTURE_2D);
+            }
+        });
 
     let program = match gl_basic::Program::compile(VS_SRC, FS_SRC) {
                 Ok(p) => p,
@@ -150,7 +152,7 @@ fn main() {
                 Err(e) => panic!("Drawable: {}", e),
             };
 
-    Vertex::set_object_vertices(&mut drawable, vec![
+    Vertex::set_vertices(&mut drawable, vec![
             Vertex{
                 position: gl_basic::Vec2{x: -0.5, y: -0.5},
                 tex_coords: gl_basic::Vec2{x: -1.0, y: -1.0},
@@ -186,22 +188,24 @@ fn main() {
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
 
-        drawable.draw();
+        texture.bind_then(|| {
+                drawable.draw();
+            });
 
         gl_window.swap_buffers().unwrap();
     }
 }
 
 const VS_SRC: &str = "
-#version 100
+#version 300 es
 precision mediump float;
 
-attribute vec2 position;
-attribute vec2 tex_coords;
-attribute vec3 color;
+in vec2 position;
+in vec2 tex_coords;
+in vec3 color;
 
-varying vec3 v_color;
-varying vec2 v_tex_coords;
+out vec3 v_color;
+out vec2 v_tex_coords;
 
 void main() {
     gl_Position = vec4(position, 0.0, 1.0);
@@ -211,41 +215,16 @@ void main() {
 }";
 
 const FS_SRC: &str = "
-#version 100
+#version 300 es
 precision mediump float;
 
 uniform sampler2D tex;
 
-varying vec3 v_color;
-varying vec2 v_tex_coords;
-
-void main() {
-    gl_FragColor = texture2D(tex, v_tex_coords);
-}";
-
-/*
-const VS_TXT_SRC: &'static [u8] = b"
-    #version 140
-    in vec2 position;
-    in vec2 tex_coords;
-    in vec4 colour;
-    out vec2 v_tex_coords;
-    out vec4 v_colour;
-    void main() {
-        gl_Position = vec4(position, 0.0, 1.0);
-        v_tex_coords = tex_coords;
-        v_colour = colour;
-    }
-\0";
-
-const FS_TXT_SRC: &'static [u8] = b"
-#version 140
-uniform sampler2D tex;
+in vec3 v_color;
 in vec2 v_tex_coords;
-in vec4 v_colour;
-out vec4 f_colour;
+
+out vec4 fragColor;
+
 void main() {
-    f_colour = v_colour;// * vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
-}
-\0";
-*/
+    fragColor = texture(tex, v_tex_coords);
+}";
