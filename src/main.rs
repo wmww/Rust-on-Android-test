@@ -197,10 +197,16 @@ fn main() {
 
     let (window_width, window_height) = gl_window.get_inner_size().unwrap();
 
-    let text_obj = match text::GlGlyphCache::new(window_width as f32, window_height as f32) {
+    let mut text_obj = match text::GlGlyphRenderer::new(window_width as f32, window_height as f32) {
         Ok(o) => o,
-        Err(e) => panic!("GlGlyphCache: {}", e),
+        Err(e) => panic!("GlGlyphRenderer: {}", e),
     };
+
+    //let text = "A japanese poem:\n\n色は匂へど散りぬるを我が世誰ぞ常ならむ有為の奥山今日越えて浅き夢見じ酔ひもせず";
+
+    let text = "ababaaaabbbababababbbaaaaaabababbbbbbabababiaababbababab";
+
+    text_obj.set_text(text);
 
     let mut running = true;
     while running {
