@@ -142,7 +142,7 @@ fn main() {
     });
 
     let program = match gl_basic::Program::compile(VS_SRC, FS_SRC) {
-        Ok(p) => p,
+        Ok(p) => std::rc::Rc::new(p),
         Err(e) => panic!("shader program: {}", e),
     };
 

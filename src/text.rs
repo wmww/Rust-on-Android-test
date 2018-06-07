@@ -157,7 +157,7 @@ impl<'font> GlGlyphRenderer<'font> {
         };
 
         let program = match gl_basic::Program::compile(VERT_SHADER_SRC, FRAG_SHADER_SOURCE) {
-            Ok(p) => p,
+            Ok(p) => std::rc::Rc::new(p),
             Err(e) => return Err(format!("text shader: {}", e)),
         };
 
@@ -211,11 +211,9 @@ impl<'font> GlGlyphRenderer<'font> {
                 }
             }*/
             caret.x += glyph.unpositioned().h_metrics().advance_width;
-
             result.push(glyph);
         }
         result
-        //vec![]
     }
 
     pub fn set_text(&mut self, text: &str) {
@@ -308,6 +306,40 @@ impl<'font> GlGlyphRenderer<'font> {
             self.object.draw();
         });
     }
+
+    /*
+    pub fn draw_cache(&mut self) {
+        if let None = self.cache_object {
+            let cache_object = match Vertex::new_object(program) {
+                Ok(o) => o,
+                Err(e) => {
+                    eprintln!("cache object: {}", e);
+                    return;
+                }
+            };
+                let vertices = vec![Vertex {
+            position: Vec2 { x: 0f32, y: 1f32 },
+            tex_coords: Vec2 { x: 0f32, y: 0f32 },
+        }, Vertex {
+            position: Vec2 { x: 0f32, y: 0f32 },
+            tex_coords: Vec2 { x: 0f32, y: 1f32 },
+        },Vertex {
+            position: Vec2 { x: 1f32, y: 0f32 },
+            tex_coords: Vec2 { x: 1f32, y: 1f32 },
+        },Vertex {
+            position: Vec2 { x: 1f32, y: 1f32 },
+            tex_coords: Vec2 { x: 1f32, y: 0f32 },
+        }];
+        let indices = vec![[0, 1, 2],[0, 2, 3]];
+
+        Vertex::set_vertices(&mut cache_object, vertices);
+        cache_object.set_indices(indices);
+        self.cache_object = cache_object;
+        }
+        self.cache.texture.bind_then(|| {
+            self.cache_object.draw();
+        });
+    }*/
 }
 
 attribs!(pub struct Vertex {

@@ -2,13 +2,14 @@ extern crate gl;
 
 use std;
 use std::mem;
+use std::rc::Rc;
 
 use gl_basic;
 use gl_basic::types;
 use gl_basic::types::GlType;
 
 pub struct Object {
-    program: gl_basic::Program,
+    program: Rc<gl_basic::Program>,
     vertex_array_id: gl::types::GLuint,
     vertex_buffer_id: gl::types::GLuint,
     element_buffer_id: gl::types::GLuint,
@@ -16,7 +17,7 @@ pub struct Object {
 }
 
 impl Object {
-    pub fn new(program: gl_basic::Program) -> Result<Object, String> {
+    pub fn new(program: Rc<gl_basic::Program>) -> Result<Object, String> {
         unsafe {
             let mut vertex_array = mem::uninitialized();
             gl::GenVertexArrays(1, &mut vertex_array);
@@ -133,7 +134,8 @@ macro_rules! attribs {
         }
 
         impl $name {
-            pub fn new_object(program: gl_basic::Program) -> Result<gl_basic::Object, String> {
+            pub fn new_object(program: std::rc::Rc<gl_basic::Program>) -> Result<gl_basic::Object, String> {
+                use std;
                 let mut object = gl_basic::Object::new(program);
                 if let Ok(ref mut object) = &mut object {
                     object.set_attribs(vec![
@@ -147,8 +149,8 @@ macro_rules! attribs {
             }
 
             pub fn set_vertices(object: &mut gl_basic::Object, data: Vec<$name>) {
+                use std;
                 unsafe {
-                    use std;
                     object.set_vertices(
                         (data.len() * std::mem::size_of::<$name>()) as gl::types::GLsizeiptr,
                         data.as_ptr() as *const _);
